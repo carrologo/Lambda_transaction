@@ -15,7 +15,7 @@ plugins:
 functions:
   lambdaTransaction:
     name: lambdaTransaction-${opt:stage, 'dev'}
-    handler: src/infrastructure/lambdas/handler.handler
+    handler: src/infrastructure/lambdas/handler.createTransactionHandler
     events:
       - http:
           path: /transactions
