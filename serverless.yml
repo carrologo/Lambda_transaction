@@ -21,3 +21,22 @@ functions:
           path: /transactions
           method: post
           cors: true
+  
+  getAllStatuses:
+    name: getAllStatuses-${opt:stage, 'dev'}
+    handler: src/infrastructure/lambdas/handler.getAllStatusesHandler
+    events:
+      - http:
+          path: /transaction/status
+          method: get
+          cors: true
+  
+  getStatusById:
+    name: getStatusById-${opt:stage, 'dev'}
+    handler: src/infrastructure/lambdas/handler.getStatusByIdHandler
+    events:
+      - http:
+          path: /transaction/status/{id}
+          method: get
+          cors: true
+  
