@@ -10,7 +10,7 @@ export class SupabaseStatusRepository implements StatusRepository {
 
   async getAllStatuses(): Promise<Status[]> {
     const { data, error } = await this.supabase
-      .from("statuses")
+      .from("status")
       .select("*")
       .order("id_status", { ascending: true });
 
@@ -27,13 +27,13 @@ export class SupabaseStatusRepository implements StatusRepository {
 
   async getStatusById(id_status: number): Promise<Status | null> {
     const { data, error } = await this.supabase
-      .from("statuses")
+      .from("status")
       .select("*")
       .eq("id_status", id_status)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') { // No rows found
+      if (error.code === 'PGRST116') {
         return null;
       }
       console.error("Error fetching status:", error);
