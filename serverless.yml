@@ -22,21 +22,26 @@ functions:
           method: post
           cors: true
   
-  getAllStatuses:
-    name: getAllStatuses-${opt:stage, 'dev'}
-    handler: src/infrastructure/lambdas/handler.getAllStatusesHandler
+  swaggerSpec:
+    name: swaggerSpec-${opt:stage, 'dev'}
+    handler: src/infrastructure/lambdas/swaggerHandler.handler
     events:
       - http:
-          path: /transaction/status
+          path: /swagger.json
           method: get
           cors: true
   
-  getStatusById:
-    name: getStatusById-${opt:stage, 'dev'}
-    handler: src/infrastructure/lambdas/handler.getStatusByIdHandler
+  swaggerUI:
+    name: swaggerUI-${opt:stage, 'dev'}
+    handler: src/infrastructure/lambdas/swaggerUIHandler.handler
     events:
       - http:
-          path: /transaction/status/{id}
+          path: /swagger-ui
           method: get
           cors: true
+      - http:
+          path: /swagger-ui/{proxy+}
+          method: get
+          cors: true
+
   
