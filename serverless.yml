@@ -13,7 +13,7 @@ plugins:
   - serverless-offline
 
 functions:
-  lambdaTransaction:
+  createTransaction:
     name: lambdaTransaction-${opt:stage, 'dev'}
     handler: src/infrastructure/lambdas/handler.createTransactionHandler
     events:
@@ -21,6 +21,16 @@ functions:
           path: /transactions
           method: post
           cors: true
+  
+  listTransactions:
+    name: lambdaListTransactions-${opt:stage, 'dev'}
+    handler: src/infrastructure/lambdas/handler.getAllTransactionsHandler
+    events:
+      - http:
+          path: /transactions
+          method: get
+          cors: true
+
   
   swaggerSpec:
     name: swaggerSpec-${opt:stage, 'dev'}
