@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { TransactionRepository } from '../../infrastructure/database/SupabaseTransactionRepository';
 import { CreateTransaction } from '../../application/use-cases/CreateTransaction';
+import { GetAllTransactions } from '../../application/use-cases/GetAllTransactions';
 import { TransactionMapper } from '../../application/mapper/TransactionMapper';
 import { corsResponse } from './CorsResponse';
 import { ValidationError } from "../../domain/entities/errors/ValidationError";
@@ -10,6 +11,72 @@ import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityEr
  * @swagger
  * components:
  *   schemas:
+ *     Transaction:
+ *       type: object
+ *       properties:
+ *         id_transaction:
+ *           type: integer
+ *           description: Transaction ID
+ *           example: 1
+ *         id_buyer:
+ *           type: integer
+ *           description: Buyer ID
+ *           example: 123
+ *         id_seller:
+ *           type: integer
+ *           description: Seller ID
+ *           example: 456
+ *         id_vehicle:
+ *           type: integer
+ *           description: Vehicle ID
+ *           example: 789
+ *         amount:
+ *           type: number
+ *           description: Transaction amount
+ *           example: 25000.50
+ *         start_date:
+ *           type: string
+ *           format: date-time
+ *           description: Transaction start date
+ *           example: "2024-01-15T10:30:00Z"
+ *         close_date:
+ *           type: string
+ *           format: date-time
+ *           description: Transaction close date
+ *           example: "2024-01-20T15:45:00Z"
+ *         description:
+ *           type: string
+ *           description: Transaction description
+ *           example: "Vehicle sale transaction"
+ *         documents:
+ *           type: string
+ *           format: uri
+ *           description: URL to transaction documents
+ *           example: "https://example.com/documents/transaction.pdf"
+ *         id_status:
+ *           type: integer
+ *           description: Transaction status ID
+ *           example: 1
+ *     
+ *     TransactionListResponse:
+ *       type: object
+ *       properties:
+ *         data:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Transaction'
+ *         pagination:
+ *           type: object
+ *           properties:
+ *             page:
+ *               type: integer
+ *               description: Current page number
+ *               example: 1
+ *             total:
+ *               type: integer
+ *               description: Total number of transactions
+ *               example: 150
+ *     
  *     TransactionRequest:
  *       type: object
  *       required:
@@ -216,8 +283,106 @@ import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityEr
  *               $ref: '#/components/schemas/InternalServerError'
  */
 
+/**
+ * @swagger
+ * /transactions:
+ *   get:
+ *     tags:
+ *       - Transactions
+ *     summary: Get all transactions with pagination
+ *     description: Retrieves a paginated list of all transactions with optional filtering and sorting
+ *     parameters:
+ *       - in: query
+ *         name: findBy
+ *         schema:
+ *           type: string
+ *         description: Field to filter by (e.g., id_buyer, id_seller, id_vehicle, id_status)
+ *         example: id_status
+ *       - in: query
+ *         name: value
+ *         schema:
+ *           type: string
+ *         description: Value to filter by (use with findBy parameter)
+ *         example: 1
+ *       - in: query
+ *         name: orderBy
+ *         schema:
+ *           type: string
+ *         description: Field to order by
+ *         example: start_date
+ *         default: id_transaction
+ *       - in: query
+ *         name: isAsc
+ *         schema:
+ *           type: boolean
+ *         description: Sort order (true for ascending, false for descending)
+ *         example: false
+ *         default: true
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Page number for pagination
+ *         example: 1
+ *         default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Number of items per page
+ *         example: 10
+ *         default: 10
+ *     responses:
+ *       200:
+ *         description: List of transactions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TransactionListResponse'
+ *             examples:
+ *               success:
+ *                 summary: Successful response
+ *                 value:
+ *                   data:
+ *                     - id_transaction: 1
+ *                       id_buyer: 123
+ *                       id_seller: 456
+ *                       id_vehicle: 789
+ *                       amount: 25000.50
+ *                       start_date: "2024-01-15T10:30:00Z"
+ *                       close_date: "2024-01-20T15:45:00Z"
+ *                       description: "Vehicle sale transaction"
+ *                       documents: "https://example.com/documents/transaction.pdf"
+ *                       id_status: 1
+ *                     - id_transaction: 2
+ *                       id_buyer: 789
+ *                       amount: 1500.00
+ *                       start_date: "2024-01-16T09:15:00Z"
+ *                       description: "Purchase of vehicle spare parts"
+ *                       id_status: 1
+ *                   pagination:
+ *                     page: 1
+ *                     total: 25
+ *       400:
+ *         description: Bad request - invalid query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/InternalServerError'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/InternalServerError'
+ */
+
 const transactionRepository = new TransactionRepository();
 const createTransaction = new CreateTransaction(transactionRepository);
+const getAllTransactions = new GetAllTransactions(transactionRepository);
 
 export const createTransactionHandler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -251,6 +416,55 @@ export const createTransactionHandler: APIGatewayProxyHandler = async (event) =>
       error: {
         code: "InternalServerError",
         message: "An unexpected error occurred."
+      }
+    });
+  }
+}
+
+export const getAllTransactionsHandler: APIGatewayProxyHandler = async (event) => {
+  try {
+    // Extract query parameters with defaults
+    const queryParams = event.queryStringParameters || {};
+    
+    const requestParams = {
+      findBy: queryParams.findBy,
+      value: queryParams.value,
+      orderBy: queryParams.orderBy || 'id_transaction',
+      isAsc: queryParams.isAsc !== 'false', // Default to true unless explicitly false
+      page: queryParams.page ? parseInt(queryParams.page, 10) : 1,
+      limit: queryParams.limit ? parseInt(queryParams.limit, 10) : 10
+    };
+
+    // Validate pagination parameters
+    if (requestParams.page < 1) {
+      return corsResponse(400, {
+        error: {
+          code: "BadRequest",
+          message: "Page number must be greater than 0."
+        }
+      });
+    }
+
+    if (requestParams.limit < 1 || requestParams.limit > 100) {
+      return corsResponse(400, {
+        error: {
+          code: "BadRequest",
+          message: "Limit must be between 1 and 100."
+        }
+      });
+    }
+
+    const result = await getAllTransactions.execute(requestParams);
+    
+    return corsResponse(200, result);
+    
+  } catch (error) {
+    console.error("Failed to retrieve transactions:", error instanceof Error ? error.message : 'Unknown error');
+    
+    return corsResponse(500, {
+      error: {
+        code: "InternalServerError",
+        message: "An unexpected error occurred while retrieving transactions."
       }
     });
   }

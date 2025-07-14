@@ -27,6 +27,52 @@ export class TransactionRepository implements ITransactionRepository {
     return transaction
   }
 
+  async getAll(queryParams: {
+    findBy?: string;
+    value?: any;
+    orderBy?: string;
+    isAsc: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: Transaction[];
+    pagination: {
+      page: number;
+      total: number;
+    };
+  }> {
+    const { findBy, value, orderBy = 'id_transaction', isAsc = true, page = 1, limit = 10 } = queryParams;
+    
+    const offset = (page - 1) * limit;
+    
+    let query = this.supabase.from("transaction").select("*", { count: "exact" });
+    
+    if (findBy && value !== undefined) {
+      query = query.eq(findBy, value);
+    }
+    
+    query = query.order(orderBy, { ascending: isAsc });
+    
+    query = query.range(offset, offset + limit - 1);
+    
+    const { data, error, count } = await query;
+    
+    if (error) {
+      console.error("Error fetching transactions:", error);
+      throw new Error(error.message);
+    }
+    
+    const transactions = (data || []).map(item => new Transaction(item));
+    
+    return {
+      data: transactions,
+      pagination: {
+        page: page,
+        total: count || 0,
+      },
+    };
+  }
+
   private async validateRelatedEntities(transaction: Transaction): Promise<void> {
     const errors: string[] = [];
 
