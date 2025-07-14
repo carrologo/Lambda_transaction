@@ -1,8 +1,6 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { TransactionRepository } from '../../infrastructure/database/SupabaseTransactionRepository';
 import { CreateTransaction } from '../../application/use-cases/CreateTransaction';
-import { GetStatuses, GetStatusById } from '../../application/use-cases/GetStatuses';
-import { SupabaseStatusRepository } from '../../infrastructure/database/SupabaseStatusRepository';
 import { TransactionMapper } from '../../application/mapper/TransactionMapper';
 import { corsResponse } from './CorsResponse';
 import { ValidationError } from "../../domain/entities/errors/ValidationError";
@@ -15,38 +13,47 @@ import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityEr
  *     TransactionRequest:
  *       type: object
  *       required:
- *         - type
- *         - id_vehicle
- *         - id_client
  *         - amount
  *       properties:
- *         type:
- *           type: string
- *           enum: [SALE, PURCHASE]
- *           description: Type of transaction
- *           example: SALE
+ *         id_buyer:
+ *           type: integer
+ *           description: Buyer ID (at least one of id_buyer or id_seller is required)
+ *           example: 123
+ *         id_seller:
+ *           type: integer
+ *           description: Seller ID (at least one of id_buyer or id_seller is required)
+ *           example: 456
  *         id_vehicle:
  *           type: integer
- *           description: Vehicle ID
- *           example: 123
- *         id_client:
- *           type: integer
- *           description: Client ID
- *           example: 456
+ *           description: Vehicle ID (required when id_seller is provided)
+ *           example: 789
  *         amount:
  *           type: number
  *           description: Transaction amount (must be greater than 0)
  *           example: 25000.50
+ *         description:
+ *           type: string
+ *           description: Transaction description (required when only id_buyer is provided)
+ *           example: "Purchase of vehicle parts"
  *         documents:
  *           type: string
  *           format: uri
  *           description: Optional URL to transaction documents
  *           example: "https://example.com/documents/transaction.pdf"
- *         status:
+ *         id_status:
+ *           type: integer
+ *           description: Transaction status ID (defaults to 1 if not provided)
+ *           example: 1
+ *         start_date:
  *           type: string
- *           enum: [NEW, IN_PROGRESS, COMPLETED]
- *           description: Transaction status (defaults to NEW if not provided)
- *           example: NEW
+ *           format: date-time
+ *           description: Transaction start date (defaults to current date if not provided)
+ *           example: "2024-01-15T10:30:00Z"
+ *         close_date:
+ *           type: string
+ *           format: date-time
+ *           description: Optional transaction close date
+ *           example: "2024-01-20T15:45:00Z"
  *     
  *     TransactionResponse:
  *       type: object
@@ -80,6 +87,30 @@ import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityEr
  *                     type: string
  *                     example: "Amount must be greater than 0."
  *     
+ *     RelatedEntityError:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: object
+ *           properties:
+ *             code:
+ *               type: string
+ *               example: "RelatedEntityError"
+ *             message:
+ *               type: string
+ *               example: "Related entity not found or invalid."
+ *             errors:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   field:
+ *                     type: string
+ *                     example: "id_buyer"
+ *                   message:
+ *                     type: string
+ *                     example: "Buyer with ID 123 not found."
+ *     
  *     InternalServerError:
  *       type: object
  *       properties:
@@ -101,7 +132,7 @@ import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityEr
  *     tags:
  *       - Transactions
  *     summary: Create a new transaction
- *     description: Creates a new vehicle transaction (sale or purchase)
+ *     description: Creates a new vehicle transaction. Supports different transaction types - can include buyer only (with description), seller with vehicle, or both buyer and seller.
  *     requestBody:
  *       required: true
  *       content:
@@ -109,22 +140,34 @@ import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityEr
  *           schema:
  *             $ref: '#/components/schemas/TransactionRequest'
  *           examples:
- *             sale_transaction:
+ *             vehicle_sale:
  *               summary: Vehicle Sale Transaction
  *               value:
- *                 type: "SALE"
- *                 id_vehicle: 123
- *                 id_client: 456
+ *                 id_seller: 456
+ *                 id_vehicle: 789
  *                 amount: 25000.50
  *                 documents: "https://example.com/sale-documents.pdf"
- *                 status: "NEW"
- *             purchase_transaction:
- *               summary: Vehicle Purchase Transaction
+ *                 id_status: 1
+ *                 start_date: "2024-01-15T10:30:00Z"
+ *             parts_purchase:
+ *               summary: Parts Purchase Transaction
  *               value:
- *                 type: "PURCHASE"
+ *                 id_buyer: 123
+ *                 amount: 1500.00
+ *                 description: "Purchase of vehicle spare parts"
+ *                 id_status: 1
+ *             complete_transaction:
+ *               summary: Complete Transaction with Buyer and Seller
+ *               value:
+ *                 id_buyer: 123
+ *                 id_seller: 456
  *                 id_vehicle: 789
- *                 id_client: 321
  *                 amount: 30000.00
+ *                 description: "Vehicle sale transaction"
+ *                 documents: "https://example.com/transaction-docs.pdf"
+ *                 id_status: 1
+ *                 start_date: "2024-01-15T10:30:00Z"
+ *                 close_date: "2024-01-20T15:45:00Z"
  *     responses:
  *       201:
  *         description: Transaction created successfully
@@ -133,11 +176,13 @@ import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityEr
  *             schema:
  *               $ref: '#/components/schemas/TransactionResponse'
  *       400:
- *         description: Validation error
+ *         description: Bad request - validation error or related entity error
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ValidationError'
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/ValidationError'
+ *                 - $ref: '#/components/schemas/RelatedEntityError'
  *             examples:
  *               validation_error:
  *                 summary: Validation Failed
@@ -148,122 +193,21 @@ import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityEr
  *                     errors:
  *                       - field: "amount"
  *                         message: "Amount must be greater than 0."
- *                       - field: "type"
- *                         message: "This field is required."
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/InternalServerError'
- */
-
-/**
- * @swagger
- * /transaction/status:
- *   get:
- *     tags:
- *       - Status
- *     summary: Get all transaction statuses
- *     description: Retrieves all available transaction statuses
- *     responses:
- *       200:
- *         description: List of all statuses retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id_status:
- *                         type: integer
- *                         example: 1
- *                       name:
- *                         type: string
- *                         example: "NEW"
- *                       description:
- *                         type: string
- *                         example: "New transaction"
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/InternalServerError'
- */
-
-/**
- * @swagger
- * /transaction/status/{id}:
- *   get:
- *     tags:
- *       - Status
- *     summary: Get status by ID
- *     description: Retrieves a specific transaction status by its ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Status ID
- *         example: 1
- *     responses:
- *       200:
- *         description: Status retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     id_status:
- *                       type: integer
- *                       example: 1
- *                     name:
- *                       type: string
- *                       example: "NEW"
- *                     description:
- *                       type: string
- *                       example: "New transaction"
- *       404:
- *         description: Status not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: object
- *                   properties:
- *                     code:
- *                       type: string
- *                       example: "NotFound"
- *                     message:
- *                       type: string
- *                       example: "Status not found."
- *       400:
- *         description: Invalid ID parameter
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: object
- *                   properties:
- *                     code:
- *                       type: string
- *                       example: "BadRequest"
- *                     message:
- *                       type: string
- *                       example: "Invalid status ID."
+ *                       - field: "id_buyer/id_seller"
+ *                         message: "At least one of id_buyer or id_seller must be provided."
+ *                       - field: "id_seller/id_vehicle"
+ *                         message: "Vehicle ID is required when seller ID is provided."
+ *               related_entity_error:
+ *                 summary: Related Entity Not Found
+ *                 value:
+ *                   error:
+ *                     code: "RelatedEntityError"
+ *                     message: "Related entity not found or invalid."
+ *                     errors:
+ *                       - field: "id_vehicle"
+ *                         message: "Vehicle with ID 789 not found."
+ *                       - field: "id_buyer"
+ *                         message: "Buyer with ID 123 not found."
  *       500:
  *         description: Internal server error
  *         content:
@@ -312,57 +256,5 @@ export const createTransactionHandler: APIGatewayProxyHandler = async (event) =>
   }
 }
 
-const statusRepository = new SupabaseStatusRepository();
-const getStatuses = new GetStatuses(statusRepository);
-const getStatusById = new GetStatusById(statusRepository);
 
-export const getAllStatusesHandler: APIGatewayProxyHandler = async (event) => {
-  try {
-    const statuses = await getStatuses.execute();
-    return corsResponse(200, { data: statuses });
-  } catch (error) {
-    console.error('Error getting statuses:', error);
-    return corsResponse(500, {
-      error: {
-        code: "InternalServerError",
-        message: "An unexpected error occurred while retrieving statuses."
-      }
-    });
-  }
-};
 
-export const getStatusByIdHandler: APIGatewayProxyHandler = async (event) => {
-  try {
-    const { id } = event.pathParameters || {};
-    
-    if (!id || isNaN(Number(id))) {
-      return corsResponse(400, {
-        error: {
-          code: "BadRequest",
-          message: "Invalid status ID."
-        }
-      });
-    }
-
-    const status = await getStatusById.execute(Number(id));
-    
-    if (!status) {
-      return corsResponse(404, {
-        error: {
-          code: "NotFound",
-          message: "Status not found."
-        }
-      });
-    }
-
-    return corsResponse(200, { data: status });
-  } catch (error) {
-    console.error('Error getting status by ID:', error);
-    return corsResponse(500, {
-      error: {
-        code: "InternalServerError",
-        message: "An unexpected error occurred while retrieving the status."
-      }
-    });
-  }
-};
