@@ -6,18 +6,23 @@ import express from "express";
 
 const app = express();
 
+const isLocal = process.env.IS_OFFLINE === "true";
+
 // Configuración de Swagger
 const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Lambda Vehicle API",
+      title: "Lambda Vehicle Transaction API",
       version: "1.0.0",
-      description: "API documentation for Lambda Vehicle",
+      description: "API documentation for Vehicle Transaction Lambda Service",
     },
     servers: [
       {
-        url: `https://${process.env.API_GATEWAY_ID}.execute-api.${process.env.AWS_REGION}.amazonaws.com/${process.env.STAGE}`,
+        url: isLocal
+          ? "http://localhost:3000"
+          : `https://${process.env.API_GATEWAY_ID}.execute-api.${process.env.AWS_REGION}.amazonaws.com/${process.env.STAGE}`,
+        description: isLocal ? "Local development server" : "Production server"
       },
     ],
   },
@@ -26,7 +31,16 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsDoc(swaggerOptions);
 
-app.use("/swagger-ui", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Configurar Swagger UI
+app.use("/swagger-ui", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "Vehicle Transaction API Documentation"
+}));
+
+// Redirigir la raíz a /swagger-ui
+app.get("/", (req, res) => {
+  res.redirect("/swagger-ui");
+});
 
 const server = createServer(app);
 
