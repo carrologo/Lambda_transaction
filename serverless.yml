@@ -13,7 +13,7 @@ plugins:
   - serverless-offline
 
 functions:
-  createTransaction:
+  lambdaTransaction:
     name: lambdaTransaction-${opt:stage, 'dev'}
     handler: src/infrastructure/lambdas/handler.createTransactionHandler
     events:
