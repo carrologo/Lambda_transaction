@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { Transaction } from "../../domain/entities/Transaction";
-import { ITransactionRepository } from "../../domain/repositories/TransactionRepository";
+import { ITransactionRepository } from "../../domain/repositories/ITransactionRepository";
 import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityError";
+import { TransactionEntity } from "./entities/TransactionEntity";
 
 export class TransactionRepository implements ITransactionRepository {
   private supabase = createClient(
@@ -9,13 +10,12 @@ export class TransactionRepository implements ITransactionRepository {
     process.env.SUPABASE_KEY || ""
   );
 
-  async save(transaction: Transaction): Promise<Transaction> {
-    // Validar que las entidades relacionadas existan
-    await this.validateRelatedEntities(transaction);
+  async save(transactionEntity: TransactionEntity): Promise<TransactionEntity> {
+    await this.validateRelatedEntities(transactionEntity);
 
-    const { error } = await this.supabase
+    const { data, error } = await this.supabase
       .from("transaction")
-      .insert(transaction)
+      .insert(transactionEntity)
       .select()
       .single();
 
@@ -24,7 +24,19 @@ export class TransactionRepository implements ITransactionRepository {
       throw new Error(error.message);
     }
 
-    return transaction
+    // Retornar la entidad con el ID generado por la base de datos
+    return new TransactionEntity(
+      data.id_transaction,
+      data.id_buyer,
+      data.id_seller,
+      data.id_vehicle,
+      data.amount,
+      data.start_date,
+      data.close_date,
+      data.description,
+      data.url_documents,
+      data.id_status
+    );
   }
 
   async getAll(queryParams: {
@@ -35,7 +47,7 @@ export class TransactionRepository implements ITransactionRepository {
     page?: number;
     limit?: number;
   }): Promise<{
-    data: Transaction[];
+    data: TransactionEntity[];
     pagination: {
       page: number;
       total: number;
@@ -62,7 +74,18 @@ export class TransactionRepository implements ITransactionRepository {
       throw new Error(error.message);
     }
     
-    const transactions = (data || []).map(item => new Transaction(item));
+    const transactions = (data || []).map(item => new TransactionEntity(
+      item.id_transaction,
+      item.id_buyer,
+      item.id_seller,
+      item.id_vehicle,
+      item.amount,
+      item.start_date || new Date(),
+      item.close_date,
+      item.description,
+      item.url_documents,
+      item.id_status || 1
+    ));
     
     return {
       data: transactions,
@@ -73,7 +96,38 @@ export class TransactionRepository implements ITransactionRepository {
     };
   }
 
-  private async validateRelatedEntities(transaction: Transaction): Promise<void> {
+  async updateDocumentsUrl(id_transaction: number, url: string): Promise<TransactionEntity> {
+    
+    const { data, error } = await this.supabase
+      .from("transaction")
+      .update({ url_documents: url })
+      .eq("id_transaction", id_transaction)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        throw new Error(`Transaction with ID ${id_transaction} not found`);
+      }
+      console.error("Error updating transaction:", error);
+      throw new Error("Failed to update transaction");
+    }
+    
+    return new TransactionEntity(
+      data.id_transaction,
+      data.id_buyer,
+      data.id_seller,
+      data.id_vehicle,
+      data.amount,
+      data.start_date,
+      data.close_date,
+      data.description,
+      data.url_documents,
+      data.id_status
+    );
+  }
+
+  private async validateRelatedEntities(transaction: TransactionEntity): Promise<void> {
     const errors: string[] = [];
 
     try {

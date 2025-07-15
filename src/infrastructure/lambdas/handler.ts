@@ -6,6 +6,7 @@ import { TransactionMapper } from '../../application/mapper/TransactionMapper';
 import { corsResponse } from './CorsResponse';
 import { ValidationError } from "../../domain/entities/errors/ValidationError";
 import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityError";
+import { UploadDocumentsRepository } from '../google/UploadDocumentsRepository';
 
 /**
  * @swagger
@@ -381,7 +382,8 @@ import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityEr
  */
 
 const transactionRepository = new TransactionRepository();
-const createTransaction = new CreateTransaction(transactionRepository);
+const uploadDocumentsRepository = new UploadDocumentsRepository();
+const createTransaction = new CreateTransaction(transactionRepository, uploadDocumentsRepository);
 const getAllTransactions = new GetAllTransactions(transactionRepository);
 
 export const createTransactionHandler: APIGatewayProxyHandler = async (event) => {

@@ -16,6 +16,7 @@ functions:
   lambdaTransaction:
     name: lambdaTransaction-${opt:stage, 'dev'}
     handler: src/infrastructure/lambdas/handler.createTransactionHandler
+    timeout: 90
     events:
       - http:
           path: /transactions
