@@ -1,5 +1,4 @@
 import { ValidationError } from "./errors/ValidationError";
-import { Status } from "./Status";
 
 export interface ITransaction {
   id_transaction?: number;
