@@ -135,6 +135,30 @@ export class TransactionRepository implements ITransactionRepository {
     );
   }
 
+  async getDetailById(id: number): Promise<TransactionDetailDto | null> {
+    const selectFields = `
+      *,
+      buyer:client!id_buyer(id, name, email),
+      seller:client!id_seller(id, name, email),
+      status(id_status, name),
+      vehicle(id, brand, line, plate)
+    `;
+    const { data, error } = await this.supabase
+      .from("transaction")
+      .select(selectFields)
+      .eq("id_transaction", id)
+      .single();
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      console.error("Error fetching transaction detail:", error);
+      throw new Error(error.message);
+    }
+    if (!data) return null;
+    return TransactionEntityMapper.toTransactionDetailDto(data);
+  }
+
   private async validateRelatedEntities(transaction: TransactionEntity): Promise<void> {
     const errors: string[] = [];
 

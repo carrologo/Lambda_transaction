@@ -7,6 +7,7 @@ import { corsResponse } from './CorsResponse';
 import { ValidationError } from "../../domain/entities/errors/ValidationError";
 import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityError";
 import { UploadDocumentsRepository } from '../google/UploadDocumentsRepository';
+import { GetTransactionDetails } from '../../application/use-cases/GetTransactionDetails';
 
 /**
  * @swagger
@@ -385,6 +386,7 @@ const transactionRepository = new TransactionRepository();
 const uploadDocumentsRepository = new UploadDocumentsRepository();
 const createTransaction = new CreateTransaction(transactionRepository, uploadDocumentsRepository);
 const getAllTransactions = new GetAllTransactions(transactionRepository);
+const getTransactionDetails = new GetTransactionDetails(transactionRepository);
 
 export const createTransactionHandler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -467,6 +469,28 @@ export const getAllTransactionsHandler: APIGatewayProxyHandler = async (event) =
       error: {
         code: "InternalServerError",
         message: "An unexpected error occurred while retrieving transactions."
+      }
+    });
+  }
+}
+
+export const getTransactionDetailsHandler: APIGatewayProxyHandler = async (event) => {
+  try {
+    const id = event.pathParameters && event.pathParameters.id ? parseInt(event.pathParameters.id, 10) : null;
+    if (!id || isNaN(id)) {
+      return corsResponse(400, { error: { code: "BadRequest", message: "Invalid or missing transaction ID." } });
+    }
+    const transaction = await getTransactionDetails.execute(id);
+    if (!transaction) {
+      return corsResponse(404, { error: { code: "NotFound", message: `Transaction with ID ${id} not found.` } });
+    }
+    return corsResponse(200, transaction);
+  } catch (error) {
+    console.error("Failed to retrieve transaction details:", error instanceof Error ? error.message : 'Unknown error');
+    return corsResponse(500, {
+      error: {
+        code: "InternalServerError",
+        message: "An unexpected error occurred while retrieving transaction details."
       }
     });
   }
