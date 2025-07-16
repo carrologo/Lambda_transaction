@@ -3,6 +3,8 @@ import { Transaction } from "../../domain/entities/Transaction";
 import { ITransactionRepository } from "../../domain/repositories/ITransactionRepository";
 import { RelatedEntityError } from "../../domain/entities/errors/RelatedEntityError";
 import { TransactionEntity } from "./entities/TransactionEntity";
+import { TransactionDetailDto } from "../dto/TransactionDetailDto";
+import { TransactionEntityMapper } from "./mapper/TransactionEntityMapper";
 
 export class TransactionRepository implements ITransactionRepository {
   private supabase = createClient(
@@ -13,9 +15,15 @@ export class TransactionRepository implements ITransactionRepository {
   async save(transactionEntity: TransactionEntity): Promise<TransactionEntity> {
     await this.validateRelatedEntities(transactionEntity);
 
+    const entityToSave = {
+      ...transactionEntity,
+      start_date: transactionEntity.start_date || new Date(),
+      id_status: transactionEntity.id_status || 1
+    };
+
     const { data, error } = await this.supabase
       .from("transaction")
-      .insert(transactionEntity)
+      .insert(entityToSave)
       .select()
       .single();
 
@@ -47,7 +55,7 @@ export class TransactionRepository implements ITransactionRepository {
     page?: number;
     limit?: number;
   }): Promise<{
-    data: TransactionEntity[];
+    data: TransactionDetailDto[];
     pagination: {
       page: number;
       total: number;
@@ -57,7 +65,16 @@ export class TransactionRepository implements ITransactionRepository {
     
     const offset = (page - 1) * limit;
     
-    let query = this.supabase.from("transaction").select("*", { count: "exact" });
+    // Construir la consulta con JOINs para incluir datos relacionados
+    const selectFields = `
+      *,
+      buyer:client!id_buyer(id, name, email),
+      seller:client!id_seller(id, name, email),
+      status(id_status, name),
+      vehicle(id, brand, line, plate)
+    `;
+    
+    let query = this.supabase.from("transaction").select(selectFields, { count: "exact" });
     
     if (findBy && value !== undefined) {
       query = query.eq(findBy, value);
@@ -74,18 +91,9 @@ export class TransactionRepository implements ITransactionRepository {
       throw new Error(error.message);
     }
     
-    const transactions = (data || []).map(item => new TransactionEntity(
-      item.id_transaction,
-      item.id_buyer,
-      item.id_seller,
-      item.id_vehicle,
-      item.amount,
-      item.start_date || new Date(),
-      item.close_date,
-      item.description,
-      item.url_documents,
-      item.id_status || 1
-    ));
+    const transactions = (data || []).map(item => 
+      TransactionEntityMapper.toTransactionDetailDto(item)
+    );
     
     return {
       data: transactions,

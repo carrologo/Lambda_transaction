@@ -1,4 +1,5 @@
 import { TransactionEntity } from "../../infrastructure/database/entities/TransactionEntity";
+import { TransactionDetailDto } from "../../infrastructure/dto/TransactionDetailDto";
 
 export interface ITransactionRepository {
     /**
@@ -24,7 +25,7 @@ export interface ITransactionRepository {
         page?: number;
         limit?: number;
     }): Promise<{
-        data: TransactionEntity[];
+        data: TransactionDetailDto[];
         pagination: {
             page: number;
             total: number;
