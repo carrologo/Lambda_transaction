@@ -4,7 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import { IUploadDocumentsRepository } from "../../domain/repositories/IUploadDocumentsRepository";
 import { fileTypeFromBuffer } from "file-type";
-import { getGoogleSecrets } from "./helperGoogleSecrets";
+import { getGoogleSecrets } from "./HelperGoogleSecrets";
 
 export class UploadDocumentsRepository implements IUploadDocumentsRepository {
   private drive;
