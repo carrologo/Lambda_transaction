@@ -64,4 +64,12 @@ functions:
           method: get
           cors: true
 
+  updateTransaction:
+    name: lambdaUpdateTransaction-${opt:stage, 'dev'}
+    handler: src/infrastructure/lambdas/handler.updateTransactionHandler
+    events:
+      - http:
+          path: /transactions/{id}
+          method: put
+          cors: true
   

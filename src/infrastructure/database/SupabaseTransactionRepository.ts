@@ -135,6 +135,22 @@ export class TransactionRepository implements ITransactionRepository {
     );
   }
 
+  async update(id: number, data: Partial<Transaction>): Promise<TransactionDetailDto> {
+    const { error } = await this.supabase
+      .from("transaction")
+      .update(data)
+      .eq("id_transaction", id);
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new Error(`Transaction with ID ${id} not found.`);
+      }
+      console.error("Error updating transaction:", error);
+      throw new Error(error.message);
+    }
+    // Devolver el DTO actualizado
+    return this.getDetailById(id) as Promise<TransactionDetailDto>;
+  }
+
   async getDetailById(id: number): Promise<TransactionDetailDto | null> {
     const selectFields = `
       *,
