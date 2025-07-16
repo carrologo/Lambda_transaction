@@ -1,4 +1,5 @@
-import { Transaction } from "../entities/Transaction";
+import { TransactionEntity } from "../../infrastructure/database/entities/TransactionEntity";
+import { TransactionDetailDto } from "../../infrastructure/dto/TransactionDetailDto";
 
 export interface ITransactionRepository {
     /**
@@ -6,7 +7,10 @@ export interface ITransactionRepository {
      * @param transaction - The transaction to save
      * @returns Promise<Transaction> - The saved transaction with generated ID
      */
-    save(transaction: Transaction): Promise<Transaction>;
+    save(transaction: TransactionEntity): Promise<TransactionEntity>;
+
+
+    updateDocumentsUrl(id_transaction: number, url: string): Promise<TransactionEntity>;
 
     /**
      * Get all transactions with optional filtering, ordering, and pagination
@@ -21,7 +25,7 @@ export interface ITransactionRepository {
         page?: number;
         limit?: number;
     }): Promise<{
-        data: Transaction[];
+        data: TransactionDetailDto[];
         pagination: {
             page: number;
             total: number;

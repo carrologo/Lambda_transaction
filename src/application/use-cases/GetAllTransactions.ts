@@ -1,5 +1,5 @@
-import { Transaction } from "../../domain/entities/Transaction";
 import { TransactionRepository } from "../../infrastructure/database/SupabaseTransactionRepository";
+import { TransactionDetailDto } from "../../infrastructure/dto/TransactionDetailDto";
 
 export class GetAllTransactions {
   constructor(private transactionRepository: TransactionRepository) {}
@@ -12,7 +12,7 @@ export class GetAllTransactions {
     page?: number;
     limit?: number;
   }): Promise<{
-    data: Transaction[];
+    data: TransactionDetailDto[];
     pagination: {
         page: number;
         total: number;

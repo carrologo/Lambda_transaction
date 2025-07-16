@@ -1,5 +1,4 @@
 import { ValidationError } from "./errors/ValidationError";
-import { Status } from "./Status";
 
 export interface ITransaction {
   id_transaction?: number;
@@ -10,11 +9,16 @@ export interface ITransaction {
   start_date: Date;
   close_date?: Date;
   description?: string;
-  documents?: string;
+  documents?: Documents[];
+  url_documents?: string;
+  allDocuments?: string[];
   id_status: number;
 }
 
-
+export interface Documents {
+  base64: string;
+  name: string;
+}
 
 export class Transaction implements ITransaction {
   id_transaction?: number;
@@ -25,7 +29,9 @@ export class Transaction implements ITransaction {
   start_date: Date;
   close_date?: Date;
   description?: string;
-  documents?: string;
+  documents?: Documents[];
+  url_documents?: string;
+  allDocuments?: string[]
   id_status: number;
   
   constructor(data: ITransaction) {
@@ -35,11 +41,13 @@ export class Transaction implements ITransaction {
     this.id_seller = data.id_seller;
     this.id_vehicle = data.id_vehicle;
     this.amount = data.amount;
-    this.start_date = data.start_date || new Date();
+    this.start_date = data.start_date;
     this.close_date = data.close_date;
     this.description = data.description;
     this.documents = data.documents;
-    this.id_status = data.id_status || 1; 
+    this.url_documents = data.url_documents;
+    this.allDocuments = data.allDocuments;
+    this.id_status = data.id_status;
   }
 
   
@@ -70,16 +78,6 @@ export class Transaction implements ITransaction {
       ]);
     }
 
-    const otherRules = [
-      { field: "documents", isValid: !data.documents || this.isValidUrl(data.documents), message: "Los documentos deben ser una URL válida." }
-    ];
-
-    otherRules.forEach((rule) => {
-      if (!rule.isValid) {
-        errors.push({ field: rule.field, message: rule.message });
-      }
-    });
-
     if (errors.length > 0) {
       throw new ValidationError("Validation failed.", errors);
     }
@@ -95,15 +93,6 @@ export class Transaction implements ITransaction {
         errors.push({ field, message: validation.message });
         break;
       }
-    }
-  }
-
-  private isValidUrl(url: string): boolean {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
     }
   }
 }
