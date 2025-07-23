@@ -21,15 +21,7 @@ functions:
       - http:
           path: /transactions
           method: post
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-            allowCredentials: false
+          cors: true
   
   listTransactions:
     name: lambdaListTransactions-${opt:stage, 'dev'}
@@ -38,15 +30,7 @@ functions:
       - http:
           path: /transactions
           method: get
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-            allowCredentials: false
+          cors: true
 
   getTransactionDetails:
     name: lambdaGetTransactionDetails-${opt:stage, 'dev'}
@@ -57,13 +41,6 @@ functions:
           method: get
           cors:
             origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-            allowCredentials: false
 
   updateTransaction:
     name: lambdaUpdateTransaction-${opt:stage, 'dev'}
@@ -72,15 +49,7 @@ functions:
       - http:
           path: /transactions/{id}
           method: put
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-            allowCredentials: false
+          cors: true
 
   
   swaggerSpec:
@@ -104,6 +73,3 @@ functions:
           path: /swagger-ui/{proxy+}
           method: get
           cors: true
-
-  
-  
