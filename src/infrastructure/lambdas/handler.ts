@@ -402,9 +402,9 @@ export const createTransactionHandler: APIGatewayProxyHandler = async (event) =>
       return corsResponse(400, {
         error: {
           code: error.code,
-          message: error.message,
           errors: error.details
-        }
+        },
+        message: "Error de validación"
       });
     }
     
@@ -412,17 +412,17 @@ export const createTransactionHandler: APIGatewayProxyHandler = async (event) =>
       return corsResponse(400, {
         error: {
           code: error.code,
-          message: error.message,
           errors: error.details
-        }
+        },
+        message: "Error de entidad relacionada"
       });
     }
     
     return corsResponse(500, {
       error: {
-        code: "InternalServerError",
-        message: "An unexpected error occurred."
-      }
+        code: "InternalServerError"
+      },
+      message: "Ocurrió un error inesperado"
     });
   }
 }
@@ -445,18 +445,18 @@ export const getAllTransactionsHandler: APIGatewayProxyHandler = async (event) =
     if (requestParams.page < 1) {
       return corsResponse(400, {
         error: {
-          code: "BadRequest",
-          message: "Page number must be greater than 0."
-        }
+          code: "BadRequest"
+        },
+        message: "El número de página debe ser mayor que 0"
       });
     }
 
     if (requestParams.limit < 1 || requestParams.limit > 100) {
       return corsResponse(400, {
         error: {
-          code: "BadRequest",
-          message: "Limit must be between 1 and 100."
-        }
+          code: "BadRequest"
+        },
+        message: "El límite debe estar entre 1 y 100"
       });
     }
 
@@ -469,9 +469,9 @@ export const getAllTransactionsHandler: APIGatewayProxyHandler = async (event) =
     
     return corsResponse(500, {
       error: {
-        code: "InternalServerError",
-        message: "An unexpected error occurred while retrieving transactions."
-      }
+        code: "InternalServerError"
+      },
+      message: "Ocurrió un error inesperado al obtener las transacciones"
     });
   }
 }
@@ -480,20 +480,30 @@ export const getTransactionDetailsHandler: APIGatewayProxyHandler = async (event
   try {
     const id = event.pathParameters && event.pathParameters.id ? parseInt(event.pathParameters.id, 10) : null;
     if (!id || isNaN(id)) {
-      return corsResponse(400, { error: { code: "BadRequest", message: "Invalid or missing transaction ID." } });
+      return corsResponse(400, { 
+        error: { 
+          code: "BadRequest" 
+        }, 
+        message: "ID de transacción inválido o faltante" 
+      });
     }
     const transaction = await getTransactionDetails.execute(id);
     if (!transaction) {
-      return corsResponse(404, { error: { code: "NotFound", message: `Transaction with ID ${id} not found.` } });
+      return corsResponse(404, { 
+        error: { 
+          code: "NotFound" 
+        }, 
+        message: `Transacción con ID ${id} no encontrada` 
+      });
     }
     return corsResponse(200, transaction);
   } catch (error) {
     console.error("Failed to retrieve transaction details:", error instanceof Error ? error.message : 'Unknown error');
     return corsResponse(500, {
       error: {
-        code: "InternalServerError",
-        message: "An unexpected error occurred while retrieving transaction details."
-      }
+        code: "InternalServerError"
+      },
+      message: "Ocurrió un error inesperado al obtener los detalles de la transacción"
     });
   }
 }
@@ -502,26 +512,41 @@ export const updateTransactionHandler: APIGatewayProxyHandler = async (event) =>
   try {
     const id = event.pathParameters && event.pathParameters.id ? parseInt(event.pathParameters.id, 10) : null;
     if (!id || isNaN(id)) {
-      return corsResponse(400, { error: { code: "BadRequest", message: "Invalid or missing transaction ID." } });
+      return corsResponse(400, { 
+        error: { 
+          code: "BadRequest" 
+        }, 
+        message: "ID de transacción inválido o faltante" 
+      });
     }
     const body = event.body ? JSON.parse(event.body) : {};
     const updated = await updateTransaction.execute(id, body);
     return corsResponse(200, updated);
   } catch (error) {
     if (error instanceof Error && error.message.includes('not found')) {
-      return corsResponse(404, { error: { code: "NotFound", message: error.message } });
+      return corsResponse(404, { 
+        error: { 
+          code: "NotFound" 
+        }, 
+        message: "Transacción no encontrada" 
+      });
     }
 
     if (error instanceof Error && error.message.includes('closed or cancelled')) {
-      return corsResponse(404, { error: { code: "NotUpdated", message: error.message } });
+      return corsResponse(404, { 
+        error: { 
+          code: "NotUpdated" 
+        }, 
+        message: "No se puede actualizar una transacción cerrada o cancelada" 
+      });
     }
 
     console.error("Failed to update transaction:", error instanceof Error ? error.message : 'Unknown error');
     return corsResponse(500, {
       error: {
-        code: "InternalServerError",
-        message: "An unexpected error occurred while updating transaction."
-      }
+        code: "InternalServerError"
+      },
+      message: "Ocurrió un error inesperado al actualizar la transacción"
     });
   }
 }

@@ -19,10 +19,10 @@ export class CreateTransaction {
       savedTransaction = await this.transactionRepository.save(TransactionEntityMapper.toEntity(transactionData));
       
       // Paso 2: Si hay documentos, procesarlos
-      if (transactionData.documents && transactionData.documents.length > 0) {
+      
         try {
           const urlDocuments = await this.uploadDocumentsRepository.uploadDocuments(
-            transactionData.documents,
+            transactionData.documents || [],
             `transaction/${savedTransaction.id_transaction}`
           );
 
@@ -43,7 +43,7 @@ export class CreateTransaction {
           }
           throw new Error(`Error al procesar documentos: ${documentError instanceof Error ? documentError.message : "Error desconocido"}`);
         }
-      }
+      
 
       return "La transacción fue ingresada correctamente.";
     } catch (error) {
