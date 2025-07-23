@@ -32,6 +32,25 @@ functions:
           method: get
           cors: true
 
+  getTransactionDetails:
+    name: lambdaGetTransactionDetails-${opt:stage, 'dev'}
+    handler: src/infrastructure/lambdas/handler.getTransactionDetailsHandler
+    events:
+      - http:
+          path: /transactions/{id}
+          method: get
+          cors:
+            origin: '*'
+
+  updateTransaction:
+    name: lambdaUpdateTransaction-${opt:stage, 'dev'}
+    handler: src/infrastructure/lambdas/handler.updateTransactionHandler
+    events:
+      - http:
+          path: /transactions/{id}
+          method: put
+          cors: true
+
   
   swaggerSpec:
     name: swaggerSpec-${opt:stage, 'dev'}
@@ -55,21 +74,5 @@ functions:
           method: get
           cors: true
 
-  getTransactionDetails:
-    name: lambdaGetTransactionDetails-${opt:stage, 'dev'}
-    handler: src/infrastructure/lambdas/handler.getTransactionDetailsHandler
-    events:
-      - http:
-          path: /transactions/{id}
-          method: get
-          cors: true
-
-  updateTransaction:
-    name: lambdaUpdateTransaction-${opt:stage, 'dev'}
-    handler: src/infrastructure/lambdas/handler.updateTransactionHandler
-    events:
-      - http:
-          path: /transactions/{id}
-          method: put
-          cors: true
+  
   

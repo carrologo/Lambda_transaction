@@ -7,7 +7,7 @@ export const corsResponse = (statusCode: number, body: any) => {
         "Vary": "Origin",
         "Access-Control-Allow-Headers":
           "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-        "Access-Control-Allow-Methods": "OPTIONS,POST,GET,PATCH,DELETE",
+        "Access-Control-Allow-Methods": "OPTIONS,POST,GET,PATCH,DELETE,PUT",
       },
       body: JSON.stringify(body),
     };
