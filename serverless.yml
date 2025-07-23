@@ -21,7 +21,15 @@ functions:
       - http:
           path: /transactions
           method: post
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: false
   
   listTransactions:
     name: lambdaListTransactions-${opt:stage, 'dev'}
@@ -30,7 +38,49 @@ functions:
       - http:
           path: /transactions
           method: get
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: false
+
+  getTransactionDetails:
+    name: lambdaGetTransactionDetails-${opt:stage, 'dev'}
+    handler: src/infrastructure/lambdas/handler.getTransactionDetailsHandler
+    events:
+      - http:
+          path: /transactions/{id}
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: false
+
+  updateTransaction:
+    name: lambdaUpdateTransaction-${opt:stage, 'dev'}
+    handler: src/infrastructure/lambdas/handler.updateTransactionHandler
+    events:
+      - http:
+          path: /transactions/{id}
+          method: put
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: false
 
   
   swaggerSpec:
@@ -55,21 +105,5 @@ functions:
           method: get
           cors: true
 
-  getTransactionDetails:
-    name: lambdaGetTransactionDetails-${opt:stage, 'dev'}
-    handler: src/infrastructure/lambdas/handler.getTransactionDetailsHandler
-    events:
-      - http:
-          path: /transactions/{id}
-          method: get
-          cors: true
-
-  updateTransaction:
-    name: lambdaUpdateTransaction-${opt:stage, 'dev'}
-    handler: src/infrastructure/lambdas/handler.updateTransactionHandler
-    events:
-      - http:
-          path: /transactions/{id}
-          method: put
-          cors: true
+  
   
