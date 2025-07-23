@@ -34,6 +34,16 @@ export class UploadDocumentsRepository implements IUploadDocumentsRepository {
     await this.init();
     try {
       const folderId = await this.getOrCreateFolder(foldername);
+
+      // Si no hay documentos, solo crear la carpeta y devolver su URL
+      if (!documents || documents.length === 0) {
+        await this.drive.permissions.create({
+          fileId: folderId,
+          requestBody: { type: "anyone", role: "reader" },
+        });
+        return `https://drive.google.com/drive/folders/${folderId}`;
+      }
+
       const documentUrls: string[] = [];
 
       for (const document of documents) {
