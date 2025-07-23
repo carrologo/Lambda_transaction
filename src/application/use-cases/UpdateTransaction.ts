@@ -9,11 +9,11 @@ export class UpdateTransaction {
     
     const existing = await this.transactionRepository.getDetailById(id);
     if (!existing) {
-      throw new Error(`Transaction with ID ${id} not found.`);
+      throw new Error(`Transacción con ID ${id} no encontrada.`);
     }
 
     if (existing.statusInfo && (existing.statusInfo.id_status === 5 || existing.statusInfo.id_status === 3)) {
-      throw new Error("Cannot update a transaction that is already closed or cancelled.");
+      throw new Error("No se puede actualizar una transacción que ya está cerrada o cancelada.");
     }
 
     if(data.id_status && (data.id_status === 5 || data.id_status === 3)) {

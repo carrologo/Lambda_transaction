@@ -117,10 +117,10 @@ export class TransactionRepository implements ITransactionRepository {
 
     if (error) {
       if (error.code === "PGRST116") {
-        throw new Error(`Transaction with ID ${id_transaction} not found`);
+        throw new Error(`Transacción con ID ${id_transaction} no encontrada`);
       }
       console.error("Error updating transaction:", error);
-      throw new Error("Failed to update transaction");
+      throw new Error("Falló al actualizar la transacción");
     }
     
     return new TransactionEntity(
@@ -145,7 +145,7 @@ export class TransactionRepository implements ITransactionRepository {
       .eq("id_transaction", id);
     if (error) {
       if (error.code === 'PGRST116') {
-        throw new Error(`Transaction with ID ${id} not found.`);
+        throw new Error(`Transacción con ID ${id} no encontrada.`);
       }
       console.error("Error updating transaction:", error);
       throw new Error(error.message);
@@ -205,7 +205,7 @@ export class TransactionRepository implements ITransactionRepository {
       if (transaction.id_status) {
         const statusExists = await this.validateEntityExists("status", "id_status", transaction.id_status);
         if (!statusExists) {
-          errors.push(`Status with ID ${transaction.id_status} does not exist.`);
+          errors.push(`El estado con ID ${transaction.id_status} no existe.`);
         }
       }
 
@@ -213,7 +213,7 @@ export class TransactionRepository implements ITransactionRepository {
       if (transaction.id_buyer) {
         const buyerExists = await this.validateEntityExists("client", "id", transaction.id_buyer);
         if (!buyerExists) {
-          errors.push(`Buyer (client) with ID ${transaction.id_buyer} does not exist.`);
+          errors.push(`El comprador con ID ${transaction.id_buyer} no existe.`);
         }
       }
 
@@ -221,7 +221,7 @@ export class TransactionRepository implements ITransactionRepository {
       if (transaction.id_seller) {
         const sellerExists = await this.validateEntityExists("client", "id", transaction.id_seller);
         if (!sellerExists) {
-          errors.push(`Seller (client) with ID ${transaction.id_seller} does not exist.`);
+          errors.push(`El vendedor con ID ${transaction.id_seller} no existe.`);
         }
       }
 
@@ -229,25 +229,25 @@ export class TransactionRepository implements ITransactionRepository {
       if (transaction.id_vehicle) {
         const vehicleExists = await this.validateEntityExists("vehicle", "id", transaction.id_vehicle);
         if (!vehicleExists) {
-          errors.push(`Vehicle with ID ${transaction.id_vehicle} does not exist.`);
+          errors.push(`El vehículo con ID ${transaction.id_vehicle} no existe.`);
         } else {
           // Validar que el vehículo no esté ya registrado en otra transacción
           const vehicleAlreadyUsed = await this.validateVehicleNotInUse(transaction.id_vehicle);
           if (vehicleAlreadyUsed) {
-            errors.push(`Vehicle with ID ${transaction.id_vehicle} is already registered in another transaction.`);
+            errors.push(`El vehículo con ID ${transaction.id_vehicle} ya está registrado en otra transacción.`);
           }
         }
       }
       
       if (errors.length > 0) {
-        throw new RelatedEntityError("Related entities validation failed.", errors);
+        throw new RelatedEntityError("Validación de entidades relacionadas falló.", errors);
       }
     } catch (error) {
       if (error instanceof RelatedEntityError) {
         throw error;
       }
       console.error("Unexpected error during validation:", error);
-      throw new Error(`Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Validación falló: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
 
