@@ -78,6 +78,8 @@ export class TransactionRepository implements ITransactionRepository {
     
     if (findBy && value !== undefined) {
       query = query.eq(findBy, value);
+    } else {
+      query = query.not("id_status", "in", "(3,5)");
     }
     
     query = query.order(orderBy, { ascending: isAsc });
