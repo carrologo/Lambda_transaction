@@ -404,7 +404,7 @@ export const createTransactionHandler: APIGatewayProxyHandler = async (event) =>
           code: error.code,
           errors: error.details
         },
-        message: "Error de validación"
+        message: error.message
       });
     }
     
@@ -414,7 +414,7 @@ export const createTransactionHandler: APIGatewayProxyHandler = async (event) =>
           code: error.code,
           errors: error.details
         },
-        message: "Error de entidad relacionada"
+        message: error.message
       });
     }
     
@@ -523,21 +523,21 @@ export const updateTransactionHandler: APIGatewayProxyHandler = async (event) =>
     const updated = await updateTransaction.execute(id, body);
     return corsResponse(200, updated);
   } catch (error) {
-    if (error instanceof Error && error.message.includes('not found')) {
+    if (error instanceof Error && error.message.includes('no encontrada')) {
       return corsResponse(404, { 
         error: { 
           code: "NotFound" 
         }, 
-        message: "Transacción no encontrada" 
+        message: error.message 
       });
     }
 
-    if (error instanceof Error && error.message.includes('closed or cancelled')) {
+    if (error instanceof Error && error.message.includes('cerrada o cancelada')) {
       return corsResponse(404, { 
         error: { 
           code: "NotUpdated" 
         }, 
-        message: "No se puede actualizar una transacción cerrada o cancelada" 
+        message: error.message 
       });
     }
 

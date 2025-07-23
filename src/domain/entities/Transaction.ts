@@ -79,7 +79,7 @@ export class Transaction implements ITransaction {
     }
 
     if (errors.length > 0) {
-      throw new ValidationError("Validation failed.", errors);
+      throw new ValidationError("Validacion falló.", errors);
     }
   }
 
