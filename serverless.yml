@@ -73,6 +73,3 @@ functions:
           path: /swagger-ui/{proxy+}
           method: get
           cors: true
-
-  
-  

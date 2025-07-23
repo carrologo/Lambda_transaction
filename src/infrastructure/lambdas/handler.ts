@@ -511,6 +511,11 @@ export const updateTransactionHandler: APIGatewayProxyHandler = async (event) =>
     if (error instanceof Error && error.message.includes('not found')) {
       return corsResponse(404, { error: { code: "NotFound", message: error.message } });
     }
+
+    if (error instanceof Error && error.message.includes('closed or cancelled')) {
+      return corsResponse(404, { error: { code: "NotUpdated", message: error.message } });
+    }
+
     console.error("Failed to update transaction:", error instanceof Error ? error.message : 'Unknown error');
     return corsResponse(500, {
       error: {

@@ -11,6 +11,14 @@ export class UpdateTransaction {
     if (!existing) {
       throw new Error(`Transaction with ID ${id} not found.`);
     }
+
+    if (existing.statusInfo && (existing.statusInfo.id_status === 5 || existing.statusInfo.id_status === 3)) {
+      throw new Error("Cannot update a transaction that is already closed or cancelled.");
+    }
+
+    if(data.id_status && (data.id_status === 5 || data.id_status === 3)) {
+      data.close_date = new Date();
+    }
     
     return this.transactionRepository.update(id, data);
   }

@@ -78,6 +78,8 @@ export class TransactionRepository implements ITransactionRepository {
     
     if (findBy && value !== undefined) {
       query = query.eq(findBy, value);
+    } else {
+      query = query.not("id_status", "in", "(3,5)");
     }
     
     query = query.order(orderBy, { ascending: isAsc });
@@ -136,6 +138,7 @@ export class TransactionRepository implements ITransactionRepository {
   }
 
   async update(id: number, data: Partial<Transaction>): Promise<TransactionDetailDto> {
+  
     const { error } = await this.supabase
       .from("transaction")
       .update(data)
@@ -157,7 +160,7 @@ export class TransactionRepository implements ITransactionRepository {
       buyer:client!id_buyer(id, name, email),
       seller:client!id_seller(id, name, email),
       status(id_status, name),
-      vehicle(id, brand, line, plate)
+      vehicle(id, brand, line, plate, url_images)
     `;
     const { data, error } = await this.supabase
       .from("transaction")
@@ -173,6 +176,25 @@ export class TransactionRepository implements ITransactionRepository {
     }
     if (!data) return null;
     return TransactionEntityMapper.toTransactionDetailDto(data);
+  }
+
+  async delete(id: number): Promise<boolean> {
+    try {
+      const { error } = await this.supabase
+        .from("transaction")
+        .delete()
+        .eq("id_transaction", id);
+
+      if (error) {
+        console.error("Error deleting transaction:", error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Exception deleting transaction:", error);
+      return false;
+    }
   }
 
   private async validateRelatedEntities(transaction: TransactionEntity): Promise<void> {
@@ -233,16 +255,17 @@ export class TransactionRepository implements ITransactionRepository {
     try {
       const { data, error } = await this.supabase
         .from("transaction")
-        .select("id_vehicle")
+        .select("id_vehicle, id_status")
         .eq("id_vehicle", vehicleId)
-        .limit(1);
+        .not("id_status", "in", "(3,5)"); // Excluir transacciones canceladas (3) y completadas (5)
 
       if (error) {
         console.error(`Error checking vehicle usage:`, error.message);
         throw new Error(`Database error while checking vehicle usage: ${error.message}`);
       }
 
-      // Si data tiene registros, significa que el vehículo ya está en uso
+      // Si data tiene registros, significa que el vehículo está en uso en transacciones activas
+      // (no canceladas ni completadas)
       return data && data.length > 0;
     } catch (error) {
       if (error instanceof Error && error.message.includes('Database error')) {

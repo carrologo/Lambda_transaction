@@ -32,4 +32,11 @@ export interface ITransactionRepository {
         };
     }>;
 
+    /**
+     * Delete a transaction by ID
+     * @param id - The transaction ID to delete
+     * @returns Promise<boolean> - True if deletion was successful
+     */
+    delete(id: number): Promise<boolean>;
+
 }
