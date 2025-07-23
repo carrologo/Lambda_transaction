@@ -61,7 +61,8 @@ export class TransactionEntityMapper {
             dto.vehicleInfo = {
                 id: supabaseData.vehicle.id,
                 description: `${supabaseData.vehicle.brand} ${supabaseData.vehicle.line}`,
-                plate: supabaseData.vehicle.plate
+                plate: supabaseData.vehicle.plate,
+                url_images: supabaseData.vehicle.url_images
             };
         }
 

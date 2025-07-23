@@ -136,6 +136,7 @@ export class TransactionRepository implements ITransactionRepository {
   }
 
   async update(id: number, data: Partial<Transaction>): Promise<TransactionDetailDto> {
+  
     const { error } = await this.supabase
       .from("transaction")
       .update(data)
@@ -157,7 +158,7 @@ export class TransactionRepository implements ITransactionRepository {
       buyer:client!id_buyer(id, name, email),
       seller:client!id_seller(id, name, email),
       status(id_status, name),
-      vehicle(id, brand, line, plate)
+      vehicle(id, brand, line, plate, url_images)
     `;
     const { data, error } = await this.supabase
       .from("transaction")

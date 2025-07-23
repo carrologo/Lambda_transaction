@@ -32,4 +32,5 @@ export interface VehicleInfoDto {
   id: number;
   description: string; // Template string con brand y line
   plate: string;
+  url_images: string;
 }
