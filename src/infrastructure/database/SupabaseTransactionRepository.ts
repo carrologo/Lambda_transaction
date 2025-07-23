@@ -198,14 +198,12 @@ export class TransactionRepository implements ITransactionRepository {
   }
 
   private async validateRelatedEntities(transaction: TransactionEntity): Promise<void> {
-    const errors: string[] = [];
-
     try {
       // Validar status
       if (transaction.id_status) {
         const statusExists = await this.validateEntityExists("status", "id_status", transaction.id_status);
         if (!statusExists) {
-          errors.push(`El estado con ID ${transaction.id_status} no existe.`);
+          throw new RelatedEntityError("El estado de transacción seleccionado no es válido", [`El estado seleccionado no existe en el sistema. Por favor, selecciona un estado válido.`]);
         }
       }
 
@@ -213,7 +211,7 @@ export class TransactionRepository implements ITransactionRepository {
       if (transaction.id_buyer) {
         const buyerExists = await this.validateEntityExists("client", "id", transaction.id_buyer);
         if (!buyerExists) {
-          errors.push(`El comprador con ID ${transaction.id_buyer} no existe.`);
+          throw new RelatedEntityError("El comprador seleccionado no existe", [`El comprador seleccionado no está registrado en el sistema. Verifica que el cliente esté registrado correctamente.`]);
         }
       }
 
@@ -221,7 +219,7 @@ export class TransactionRepository implements ITransactionRepository {
       if (transaction.id_seller) {
         const sellerExists = await this.validateEntityExists("client", "id", transaction.id_seller);
         if (!sellerExists) {
-          errors.push(`El vendedor con ID ${transaction.id_seller} no existe.`);
+          throw new RelatedEntityError("El vendedor seleccionado no existe", [`El vendedor seleccionado no está registrado en el sistema. Verifica que el cliente esté registrado correctamente.`]);
         }
       }
 
@@ -229,18 +227,14 @@ export class TransactionRepository implements ITransactionRepository {
       if (transaction.id_vehicle) {
         const vehicleExists = await this.validateEntityExists("vehicle", "id", transaction.id_vehicle);
         if (!vehicleExists) {
-          errors.push(`El vehículo con ID ${transaction.id_vehicle} no existe.`);
+          throw new RelatedEntityError("El vehículo seleccionado no existe", [`El vehículo seleccionado no está registrado en el sistema. Verifica que el vehículo esté registrado correctamente.`]);
         } else {
           // Validar que el vehículo no esté ya registrado en otra transacción
           const vehicleAlreadyUsed = await this.validateVehicleNotInUse(transaction.id_vehicle);
           if (vehicleAlreadyUsed) {
-            errors.push(`El vehículo con ID ${transaction.id_vehicle} ya está registrado en otra transacción.`);
+            throw new RelatedEntityError("Vehículo no disponible", [`Este vehículo ya está siendo utilizado en otra transacción activa. No es posible crear una nueva transacción hasta que la actual sea completada o cancelada.`]);
           }
         }
-      }
-      
-      if (errors.length > 0) {
-        throw new RelatedEntityError("Validación de entidades relacionadas falló.", errors);
       }
     } catch (error) {
       if (error instanceof RelatedEntityError) {
